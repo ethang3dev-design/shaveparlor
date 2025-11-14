@@ -1,11 +1,21 @@
+// --------- Netlify Function: sheets.js ---------
+// Communicates with your Google Apps Script Web App backend
+// MUST be placed in /netlify/functions/sheets.js
+
 export async function handler(event, context) {
-  const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbypSO_TIVome8l-jdIqOHjXLmfaf0Mi_8tQukNzIG9BrC8gH0sd3bcnqm4AaeSmQa7Y9A/exec";
+  // ---- Your Google Apps Script Web App URL ----
+  const GOOGLE_URL =
+    "https://script.google.com/macros/s/AKfycbypSO_TIVome8l-jdIqOHjXLmfaf0Mi_8tQukNzIG9BrC8gH0sd3bcnqm4AaeSmQa7Y9A/exec";
 
   try {
-    // ----- GET (list appointments) -----
+    // ---- Handle LIST appointments (GET) ----
     if (event.httpMethod === "GET") {
-      const r = await fetch(GOOGLE_URL + "?action=list");
-      const data = await r.json();
+      const response = await fetch(`${GOOGLE_URL}?action=list`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await response.json();
 
       return {
         statusCode: 200,
@@ -13,21 +23,21 @@ export async function handler(event, context) {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Headers": "Content-Type",
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       };
     }
 
-    // ----- POST (add appointment) -----
+    // ---- Handle ADD appointment (POST) ----
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body);
 
-      const r = await fetch(GOOGLE_URL, {
+      const response = await fetch(GOOGLE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
-      const data = await r.json();
+      const data = await response.json();
 
       return {
         statusCode: 200,
@@ -35,23 +45,26 @@ export async function handler(event, context) {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Headers": "Content-Type",
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       };
     }
 
-    // ----- NON SUPPORTED METHOD -----
+    // ---- Unsupported method ----
     return {
       statusCode: 405,
-      body: "Method Not Allowed"
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: "Method Not Allowed",
     };
-  }
-  catch (err) {
+  } catch (err) {
+    // ---- Error handler ----
     return {
       statusCode: 500,
       headers: {
-        "Access-Control-Allow-Origin": "*"
+        "Access-Control-Allow-Origin": "*",
       },
-      body: JSON.stringify({ error: String(err) })
+      body: JSON.stringify({ error: String(err) }),
     };
   }
 }
