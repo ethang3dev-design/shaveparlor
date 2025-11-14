@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BOOK AN APOINTMENT - The Shave Parlor</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Oswald:wght@200..700&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/a2e0e6e94e.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <link rel="icon" href="img/favicon.png" type="image/x-icon">
+
+  <!-- Tailwind CDN (quick prototyping) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
+</head>
+
+<body class=" text-gray-900 antialiased">
+<!-- HEADER / NAVBAR -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <span style="font-size: 25px;" class="brand-name">THE SHAVE PARLOR</span>
+    </div>
+
+    <nav class="desktop-nav">
+      <a href="index.html">Home</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#services">Services</a>
+      <a href="index.html#gallery">Gallery</a>
+      <a href="index.html#contact">Contact</a>
+      <a href="index.html#booking" class="cta">BOOK</a>
+    </nav>
+
+   <button class="hamburger" id="hamburger">
+  <span class="material-icons">menu</span>
+</button>
+
+  </div>
+
+  
+</header>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="close-x" id="closeMenu">&times;</button>
+  <div class="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="index.html#about">About</a>
+    <a href="index.html#services">Services</a>
+    <a href="index.html#gallery">Gallery</a>
+    <a href="index.html#contact">Contact</a>
+    <a href="index.html#booking"  class="cta">Book Now</a>
+  </div>
+</div>
+
+
+  <main class="min-h-screen flex items-start justify-center py-12 px-4">
+    <div class="w-full max-w-5xl">
+      <div class="mb-6">
+        <h1 style="font-family: 'oswald',sans-serif; text-transform: uppercase; -webkit-text-stroke: 1px rgb(255, 255, 255); /* Define outline width and color */" class="text-4xl font-extrabold">Book Your Appointment</h1>
+        
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <!-- Calendar -->
+        <div class="lg:col-span-3 bg-gray-50 rounded-xl p-6 shadow">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <button id="prevMonthSmall" class="p-2 rounded hover:bg-gray-200">‹</button>
+              <div id="monthLabelSmall" class="font-semibold"></div>
+              <button id="nextMonthSmall" class="p-2 rounded hover:bg-gray-200">›</button>
+            </div>
+            <div class="text-sm text-gray-500">Tap a date to choose times</div>
+          </div>
+
+          <!-- weekday headers -->
+          <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-gray-500 mb-2">
+            <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
+          </div>
+
+          <div id="calendarSmall" class="grid grid-cols-7 gap-2"></div>
+        </div>
+
+        <!-- Times + Confirm -->
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-gray-50 rounded-xl p-6 shadow">
+            <h3 class="text-lg font-bold mb-3">Available Times</h3>
+            <div id="timesSmall" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-80 overflow-auto"></div>
+          </div>
+
+          <div class="bg-gray-50 rounded-xl p-6 shadow">
+            <h3 class="text-lg font-bold mb-3">Confirm</h3>
+            <div id="confirmSummary" class="mb-3 text-sm text-gray-600">Select a date & time</div>
+
+            <form id="quickBookingForm" class="space-y-3">
+              <input id="q_name" name="q_name" required placeholder="Full name" class="w-full border rounded px-3 py-2" />
+              <input id="q_phone" name="q_phone" required placeholder="Phone" class="w-full border rounded px-3 py-2" />
+              <input id="q_service" name="q_service" placeholder="Service (optional)" class="w-full border rounded px-3 py-2" />
+              <input id="q_date" type="hidden" />
+              <input id="q_time" type="hidden" />
+              <button style="font-family: 'oswald',sans-serif; text-transform: uppercase;" class="w-full bg-black text-white rounded px-4 py-2" type="submit">Confirm Booking</button>
+            </form>
+            <p id="quickMsg" class="text-sm mt-2"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <p>&copy; 2025 The Shave Parlor. All rights reserved.</p>
+  </footer>
+
+  <!-- ========== SCRIPT ========= -->
+  <script src="script.js"></script>
+  <script>
+/* script.js
+   Booking + Dashboard with Google Sheets backend (falls back to localStorage)
+   - Replace previous script.js with this file
+   - Keep your HTML unchanged
+*/
+
+const STORAGE_KEY = 'fh_appointments_v2';
+const ADMIN_PW = '1234';
+
+// ---------- Google Apps Script endpoint (your web app) ----------
+const EXEC_URL = '/.netlify/functions/sheets';
+
+
+const WRITE_SECRET = 'b7f9a3c2-8d4e-4a1c-9b2f-7381d1a2f9c2';
+
+// ---------- storage helpers (local fallback) ----------
+function loadAppointmentsLocal(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch(e){ console.warn('local load error', e); return []; }
+}
+function saveAppointmentsLocal(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36,7).slice(2,7); }
+
+/* ---------- API helpers (talk to Apps Script) ---------- */
+async function apiList(){
+  // GET ?action=list
+  try {
+    const r = await fetch(`${EXEC_URL}?action=list`, { method: 'GET', mode: 'cors', cache: 'no-cache' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    if (!Array.isArray(data)) throw new Error('Invalid list response');
+    console.log('apiList →', data.length, 'records');
+    return data;
+  } catch (err) {
+    console.warn('apiList failed:', err);
+    return null; // caller will fallback to local
+  }
+}
+
+async function apiAdd(record){
+  // POST { action:'add', secret, record }
+  try {
+    const r = await fetch(EXEC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify({ action: 'add', secret: WRITE_SECRET, record })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (j && j.ok) return j;
+    // server might return record in other shape; return j anyway
+    return j;
+  } catch (err) {
+    console.warn('apiAdd failed:', err);
+    return null;
+  }
+}
+
+async function apiUpdate(id, record){
+  try {
+    const r = await fetch(EXEC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify({ action: 'update', secret: WRITE_SECRET, id, record })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    return j;
+  } catch (err) {
+    console.warn('apiUpdate failed:', err);
+    return null;
+  }
+}
+
+async function apiDelete(id){
+  try {
+    const r = await fetch(EXEC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify({ action: 'delete', secret: WRITE_SECRET, id })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    return j;
+  } catch (err) {
+    console.warn('apiDelete failed:', err);
+    return null;
+  }
+}
+
+// ---------- sync helpers ----------
+async function syncFromServerIfPossible(renderCallback){
+  // Try to fetch from server; if successful, replace local storage and re-render
+  const server = await apiList();
+  if (server && Array.isArray(server)){
+    // ensure normalized times (HH:MM)
+    const normalized = server.map(s => ({
+      id: s.id || uid(),
+      name: s.name || '',
+      phone: s.phone || '',
+      service: s.service || '',
+      date: s.date || '',
+      time: normalizeTime(s.time || ''),
+      createdAt: s.createdAt || (new Date()).toISOString()
+    }));
+    saveAppointmentsLocal(normalized);
+    console.log('Synced from server, saved', normalized.length);
+    if (typeof renderCallback === 'function') renderCallback();
+    return true;
+  }
+  return false;
+}
+
+function normalizeTime(hhmm){
+  if (!hhmm) return '';
+  const parts = String(hhmm).trim().split(':');
+  const h = parseInt(parts[0]||0,10);
+  const m = parseInt(parts[1]||0,10);
+  return `${String(h).padStart(2,'0')}:${String(Math.floor(m/30)*30).padStart(2,'0')}`;
+}
+
+// ---------- original booking + dashboard code (only lightly altered)
+// NOTE: I preserved your original functions and IDs so your HTML doesn't need edits.
+// The main change: quick booking and dashboard manual add/edit/delete try to call the
+// Google backend; if that fails we still persist in localStorage so the UI works.
+
+(function initBooking(){
+  const calEl = document.getElementById('calendarSmall');
+  if (!calEl) return;
+
+  const monthLabel = document.getElementById('monthLabelSmall');
+  const prevBtn = document.getElementById('prevMonthSmall');
+  const nextBtn = document.getElementById('nextMonthSmall');
+  const timesEl = document.getElementById('timesSmall');
+  const summary = document.getElementById('confirmSummary');
+  const q_date = document.getElementById('q_date');
+  const q_time = document.getElementById('q_time');
+  const quickForm = document.getElementById('quickBookingForm');
+  const quickMsg = document.getElementById('quickMsg');
+
+  let cursor = new Date(); cursor.setDate(1);
+  let selectedDate = null;
+  let selectedTime = null;
+
+  function loadAppointments(){ return loadAppointmentsLocal(); }
+  function saveAppointments(arr){ saveAppointmentsLocal(arr); }
+
+  function renderMonth(){
+    calEl.innerHTML = '';
+    monthLabel.textContent = cursor.toLocaleString(undefined, { month:'long', year:'numeric' });
+    const y = cursor.getFullYear(), m = cursor.getMonth();
+    const first = new Date(y,m,1);
+    const pad = first.getDay(); // 0=Sun
+    const daysIn = new Date(y,m+1,0).getDate();
+
+    // leading blanks
+    for (let i=0;i<pad;i++){ calEl.appendChild(document.createElement('div')); }
+
+    const appts = loadAppointments();
+
+    for (let d=1; d<=daysIn; d++){
+      const dt = new Date(y,m,d);
+      const isoDate = iso(dt);
+      const dow = dt.getDay();
+      const cell = document.createElement('button');
+      cell.className = 'p-3 rounded text-left hover:bg-gray-100 relative';
+      const count = appts.filter(a=>a.date===isoDate).length;
+      // inner content - keep small and centered
+      cell.innerHTML = `<div class="font-semibold">${d}</div><div class="text-xs text-gray-500"></div>`;
+
+      // if closed Sunday, dim
+      if (!businessRangeForDay(dow)){
+        cell.classList.add('opacity-50','cursor-not-allowed');
+      } else {
+        cell.addEventListener('click', ()=>{
+          selectedDate = isoDate;
+          document.querySelectorAll('#calendarSmall button').forEach(b=>b.classList.remove('ring','ring-2','ring-gray-300'));
+          cell.classList.add('ring','ring-2','ring-gray-300');
+          q_date.value = isoDate;
+          summary.textContent = `${formatDayDate(isoDate)} — choose a time`;
+          renderTimesForDate(isoDate);
+        });
+      }
+
+      calEl.appendChild(cell);
+    }
+  }
+
+  function renderTimesForDate(isoDate){
+    timesEl.innerHTML = '';
+    selectedTime = null;
+    q_time.value = '';
+    quickMsg.textContent = '';
+    if (!isoDate) return;
+    const d = new Date(isoDate + 'T00:00:00');
+    const dow = d.getDay();
+    const business = businessRangeForDay(dow);
+    if(!business){ timesEl.innerHTML = '<div class="text-sm text-gray-500">Closed</div>'; return; }
+    const start = business.start, end = business.end;
+    const appts = loadAppointments().filter(a=>a.date===isoDate);
+    const taken = appts.map(a=>a.time);
+    for (let t = start; t < end; t += 30){
+      const hh = String(Math.floor(t/60)).padStart(2,'0'), mm = String(t%60).padStart(2,'0');
+      const hhmm = `${hh}:${mm}`;
+      const btn = document.createElement('button');
+      btn.className = 'px-3 py-2 rounded border text-sm bg-white border-gray-200';
+      btn.textContent = hhmmToDisplay(hhmm);
+      if (taken.includes(hhmm)){
+        btn.classList.add('opacity-40','cursor-not-allowed');
+        btn.disabled = true;
+        btn.textContent += ' • taken';
+      } else {
+        btn.addEventListener('click', ()=>{
+          document.querySelectorAll('#timesSmall button').forEach(b=>b.classList.remove('time-selected'));
+          btn.classList.add('time-selected');
+          selectedTime = hhmm;
+          q_time.value = hhmm;
+          summary.textContent = `${formatDayDate(isoDate)} – ${hhmmToDisplay(hhmm)}`;
+        });
+      }
+      timesEl.appendChild(btn);
+    }
+  }
+
+  prevBtn.addEventListener('click', ()=>{ cursor.setMonth(cursor.getMonth()-1); renderMonth(); });
+  nextBtn.addEventListener('click', ()=>{ cursor.setMonth(cursor.getMonth()+1); renderMonth(); });
+
+  quickForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const name = document.getElementById('q_name').value.trim();
+    const phone = document.getElementById('q_phone').value.trim();
+    const service = document.getElementById('q_service').value.trim();
+    if (!q_date.value || !q_time.value){ quickMsg.textContent = 'Pick date and time'; quickMsg.className='text-red-600 mt-2'; return; }
+
+    const arr = loadAppointments();
+    if (arr.find(a=>a.date===q_date.value && a.time===q_time.value)){ quickMsg.textContent='Slot taken'; quickMsg.className='text-red-600 mt-2'; renderTimesForDate(q_date.value); return; }
+
+    const newRec = { id: uid(), name, phone, service, date: q_date.value, time: q_time.value, createdAt: new Date().toISOString() };
+
+    // Try server add first
+    const apiResp = await apiAdd(newRec);
+    if (apiResp && apiResp.ok) {
+      // server saved — but server might return canonical record; prefer that if present
+      const serverRecord = apiResp.record || newRec;
+      const newArr = loadAppointments().concat([serverRecord]);
+      saveAppointmentsLocal(newArr);
+      quickMsg.textContent = 'Booked (saved to server)!';
+      quickMsg.className = 'text-green-600 mt-2';
+    } else {
+      // fallback to local storage and inform user
+      arr.push(newRec);
+      saveAppointmentsLocal(arr);
+      quickMsg.textContent = 'Booked locally (server unavailable).';
+      quickMsg.className = 'text-yellow-600 mt-2';
+      console.warn('Saved locally because server add failed');
+    }
+
+    // reset selection UI
+    document.querySelectorAll('#calendarSmall button').forEach(b=>b.classList.remove('ring','ring-2','ring-gray-300'));
+    document.querySelectorAll('#timesSmall button').forEach(b=>b.classList.remove('time-selected'));
+    q_date.value = ''; q_time.value = '';
+    summary.textContent = 'Select a date & time';
+    quickForm.reset();
+    renderMonth();
+    // notify other tabs
+    localStorage.setItem('fh_last_update', Date.now());
+    // attempt background sync from server next tick
+    setTimeout(()=> syncFromServerIfPossible(renderMonth), 400);
+  });
+
+  // on load try to sync from server and then render
+  syncFromServerIfPossible(renderMonth).then(ok=>{
+    if (!ok) { renderMonth(); } // fallback if server not reachable
+  });
+
+})(); // booking init end
+
+
+/* ---------- Dashboard (login + calendar + add/edit/delete) ---------- */
+(function initDashboard(){
+  const loginBox = document.getElementById('loginBox');
+  if (!loginBox) return; // not on dashboard
+
+  // elements
+  const mainUI = document.getElementById('mainUI');
+  const loginErr = document.getElementById('loginErr');
+  const loginBtn = document.getElementById('loginBtn');
+  const adminPass = document.getElementById('adminPass');
+
+  const dayBtn = document.getElementById('dayViewBtn');
+  const weekBtn = document.getElementById('weekViewBtn');
+  const calendarContainer = document.getElementById('calendarContainer');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const rangeLabel = document.getElementById('rangeLabel');
+  const apptList = document.getElementById('apptList');
+
+  const dashModal = document.getElementById('dashModal');
+  const dashModalClose = document.getElementById('dashModalClose');
+  const dashForm = document.getElementById('dashForm');
+  const dashDelete = document.getElementById('dashDelete');
+
+  const addManualBtn = document.getElementById('addManualBtn');
+  const clearAllBtn = document.getElementById('clearAllBtn');
+
+  // state
+  let view = 'day';
+  let cursor = new Date();
+  let editId = null;
+
+  // local storage helpers used here too
+  function loadAppointments(){ return loadAppointmentsLocal(); }
+  function saveAppointments(arr){ saveAppointmentsLocal(arr); }
+
+  // login
+  loginBtn.addEventListener('click', ()=>{
+    if (adminPass.value === ADMIN_PW){
+      loginBox.classList.add('hidden');
+      mainUI.classList.remove('hidden');
+      renderCalendar();
+      renderApptList();
+    } else {
+      loginErr.textContent = 'Wrong password';
+      setTimeout(()=> loginErr.textContent = '', 1600);
+    }
+  });
+
+  dayBtn.addEventListener('click', ()=> { view='day'; renderCalendar(); });
+  weekBtn.addEventListener('click', ()=> { view='week'; renderCalendar(); });
+
+  prevBtn.addEventListener('click', ()=> {
+    if (view==='day') cursor.setDate(cursor.getDate() - 1);
+    else cursor.setDate(cursor.getDate() - 7);
+    renderCalendar();
+  });
+  nextBtn.addEventListener('click', ()=> {
+    if (view==='day') cursor.setDate(cursor.getDate() + 1);
+    else cursor.setDate(cursor.getDate() + 7);
+    renderCalendar();
+  });
+
+  clearAllBtn.addEventListener('click', async ()=> {
+    if (!confirm('Clear all appointments?')) return;
+    // local clear
+    saveAppointmentsLocal([]);
+    // attempt to delete on server by sending overwrite/delete action (if supported)
+    try {
+      const r = await fetch(EXEC_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ action: 'clear_all', secret: WRITE_SECRET })
+      });
+      if (r.ok) console.log('server cleared (if supported)');
+    } catch(e){ console.warn('server clear failed', e); }
+    renderCalendar(); renderApptList();
+    localStorage.setItem('fh_last_update', Date.now());
+  });
+
+  addManualBtn.addEventListener('click', ()=> openDashModal(null));
+  dashModalClose.addEventListener('click', ()=> closeDashModal());
+
+  function openDashModal(appt){
+    editId = appt ? appt.id : null;
+    document.getElementById('dashId').value = editId || '';
+    document.getElementById('dashName').value = appt ? appt.name : '';
+    document.getElementById('dashPhone').value = appt ? appt.phone : '';
+    document.getElementById('dashService').value = appt ? appt.service : '';
+    document.getElementById('dashDate').value = appt ? appt.date : iso(new Date());
+    document.getElementById('dashTime').value = appt ? aTimeToInput(appt.time) : '10:00';
+    document.getElementById('dashModalTitle').textContent = appt ? 'Edit Appointment' : 'Add Appointment';
+    dashDelete.style.display = appt ? 'inline-block' : 'none';
+    dashModal.classList.remove('hidden'); dashModal.classList.add('flex');
+  }
+  function closeDashModal(){ dashModal.classList.add('hidden'); dashModal.classList.remove('flex'); }
+
+  dashForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const id = document.getElementById('dashId').value || uid();
+    const name = document.getElementById('dashName').value.trim();
+    const date = document.getElementById('dashDate').value;
+    let time = document.getElementById('dashTime').value; // hh:mm input
+    if (!time.includes(':')) time = time + ':00';
+    const phone = document.getElementById('dashPhone').value.trim();
+    const service = document.getElementById('dashService').value.trim();
+
+    const arr = loadAppointments();
+    const collision = arr.find(a => a.date===date && a.time===time && a.id !== id);
+    if (collision){ alert('Slot taken'); return; }
+
+    const record = { id, name, date, time, phone, service, createdAt: new Date().toISOString() };
+    const idx = arr.findIndex(a => a.id === id);
+    if (idx >= 0) arr[idx] = record; else arr.push(record);
+
+    // Try server update/add
+    let apiOk = false;
+    if (idx >= 0) {
+      const up = await apiUpdate(id, record);
+      if (up && up.ok) apiOk = true;
+    } else {
+      const added = await apiAdd(record);
+      if (added && added.ok) apiOk = true;
+    }
+
+    if (apiOk){
+      saveAppointmentsLocal(arr);
+      console.log('Saved to server and local');
+    } else {
+      saveAppointmentsLocal(arr);
+      console.warn('Server not available; saved locally');
+      // still okay — local UI still works
+    }
+
+    closeDashModal();
+    renderCalendar(); renderApptList();
+    localStorage.setItem('fh_last_update', Date.now());
+  });
+
+  dashDelete.addEventListener('click', async ()=>{
+    const id = document.getElementById('dashId').value;
+    if (!confirm('Delete this appointment?')) return;
+    let serverOk = false;
+    const apiResp = await apiDelete(id);
+    if (apiResp && apiResp.ok) serverOk = true;
+
+    // remove from local regardless
+    const arr = loadAppointments().filter(a=>a.id !== id);
+    saveAppointmentsLocal(arr);
+    closeDashModal();
+    renderCalendar(); renderApptList();
+    localStorage.setItem('fh_last_update', Date.now());
+    if (!serverOk) console.warn('Delete: server failed or not supported; removed locally');
+  });
+
+  function renderApptList(){
+    const arr = loadAppointments().slice().sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
+    apptList.innerHTML = '';
+    arr.forEach(a=>{
+      const div = document.createElement('div');
+      div.className = 'p-2 border rounded mb-2';
+      div.innerHTML = `<div class="font-semibold">${a.name}</div><div class="text-sm text-gray-600">${formatDayDate(a.date)} • ${hhmmToDisplay(a.time)}</div>`;
+      div.addEventListener('click', ()=> openDashModal(a));
+      apptList.appendChild(div);
+    });
+  }
+
+  function aTimeToInput(hhmm){ return hhmm; }
+
+  function renderCalendar(){
+    calendarContainer.innerHTML = '';
+    if (view === 'day') renderDayView();
+    else renderWeekView();
+    renderApptList();
+  }
+
+  // Day view render (keeps your existing look)
+  function renderDayView(){
+    const day = new Date(cursor);
+    const label = formatDayDate(iso(day));
+    rangeLabel.textContent = label;
+
+    const container = document.createElement('div');
+    container.className = 'p-4';
+
+    const timeline = document.createElement('div');
+    timeline.className = 'grid grid-cols-12 gap-2';
+
+    const timesCol = document.createElement('div'); timesCol.className = 'col-span-1';
+    const slotsCol = document.createElement('div'); slotsCol.className = 'col-span-11';
+
+    // standard 10:00 - 18:30
+    const startHour = 10;
+    const endMinutes = 18 * 60 + 30;
+    const totalSlots = (endMinutes - startHour * 60) / 30;
+
+    for (let i=0;i<totalSlots;i++){
+      const minutes = startHour * 60 + i*30;
+      const hh = Math.floor(minutes/60);
+      const mm = minutes%60;
+      const timeLabel = document.createElement('div');
+      timeLabel.className = 'text-sm text-gray-500 py-3';
+      timeLabel.textContent = hhmmToDisplay(`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`);
+      timesCol.appendChild(timeLabel);
+
+      const slot = document.createElement('div');
+      slot.className = 'calendar-slot relative border-b';
+      slot.style.minHeight = '48px';
+      slot.dataset.time = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+      slot.addEventListener('click', ()=> openDashModal({ id:null, date: iso(day), time: slot.dataset.time }));
+      slotsCol.appendChild(slot);
+    }
+
+    timeline.appendChild(timesCol); timeline.appendChild(slotsCol);
+    container.appendChild(timeline); calendarContainer.appendChild(container);
+
+    // place appointments
+    const appts = loadAppointments().filter(a => a.date === iso(day));
+    appts.forEach(a=>{
+      const apTime = a.time;
+      const slot = slotsCol.querySelector(`[data-time="${apTime}"]`);
+      const pill = document.createElement('div');
+      pill.className = 'appt-pill';
+      pill.textContent = `${hhmmToDisplay(apTime)} — ${a.name}`;
+      pill.addEventListener('click', ev => { ev.stopPropagation(); openDashModal(a); });
+
+      if (slot) slot.appendChild(pill);
+      else {
+        // fallback rounding
+        const [hStr, mStr] = apTime.split(':');
+        const h = parseInt(hStr||0,10), m = parseInt(mStr||0,10);
+        const minutesFromStart = (h*60 + m) - (startHour*60);
+        const idx = Math.round(minutesFromStart / 30);
+        if (idx >= 0 && idx < slotsCol.children.length) slotsCol.children[idx].appendChild(pill);
+      }
+    });
+  }
+
+  function renderWeekView(){
+    const start = new Date(cursor);
+    const dayIdx = start.getDay();
+    const shift = (dayIdx + 6) % 7;
+    start.setDate(start.getDate() - shift);
+    const end = new Date(start); end.setDate(start.getDate() + 6);
+    rangeLabel.textContent = `${start.toLocaleDateString()} — ${end.toLocaleDateString()}`;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'grid grid-cols-1 sm:grid-cols-7 gap-2 p-3';
+
+    for (let i=0;i<7;i++){
+      const day = new Date(start); day.setDate(start.getDate() + i);
+      const isoDay = iso(day);
+      const col = document.createElement('div');
+      col.className = 'bg-white p-2 border rounded overflow-auto week-day';
+      const header = document.createElement('div'); header.className = 'day-header';
+      header.textContent = day.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'});
+      col.appendChild(header);
+
+      const appts = loadAppointments().filter(a => a.date === isoDay).sort((a,b)=> a.time.localeCompare(b.time));
+      if (appts.length === 0){
+        const empty = document.createElement('div'); empty.className = 'text-sm text-gray-500'; empty.textContent = '';
+        col.appendChild(empty);
+      } else {
+        appts.forEach(a=>{
+          const ap = document.createElement('div');
+          ap.className = 'day-appt';
+          ap.textContent = `${hhmmToDisplay(a.time)} • ${a.name}`;
+          ap.addEventListener('click', (e)=> { e.stopPropagation(); openDashModal(a); });
+          col.appendChild(ap);
+        });
+      }
+
+      col.addEventListener('click', ()=> openDashModal({ id:null, date: isoDay, time: '10:00' }));
+      wrapper.appendChild(col);
+    }
+
+    calendarContainer.appendChild(wrapper);
+  }
+
+  // listen to storage changes from other tabs
+  window.addEventListener('storage', (ev)=>{
+    if (ev.key === STORAGE_KEY || ev.key === 'fh_last_update'){
+      renderCalendar(); renderApptList();
+    }
+  });
+
+  // initial sync then render
+  syncFromServerIfPossible(renderCalendar).then(ok=>{
+    if (!ok) renderCalendar();
+  });
+
+})(); // dashboard init end
+
+// ---------- small utilities (unchanged) ----------
+function iso(d){ // YYYY-MM-DD
+  if (!d) return '';
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  return (new Date(d)).toISOString().slice(0,10);
+}
+function hhmmToDisplay(hhmm){
+  if (!hhmm) return '';
+  const [hh, mm] = hhmm.split(':').map(Number);
+  const am = hh >= 12 ? 'PM' : 'AM';
+  const h12 = ((hh + 11) % 12) + 1;
+  return `${h12}:${String(mm).padStart(2,'0')} ${am}`;
+}
+function formatDayDate(isoDate){
+  const d = new Date(isoDate + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { weekday:'long', month:'short', day:'numeric' });
+}
+function businessRangeForDay(dow){
+  if (dow === 0) return null;
+  if (dow === 1) return { start: 10*60, end: 17*60 }; // Mon
+  if (dow >= 2 && dow <= 5) return { start: 10*60, end: 18*60 + 30 }; // Tue-Fri
+  if (dow === 6) return { start: 10*60, end: 16*60 }; // Sat
+  return null;
+}
+
+
+  </script>
+</body>
+</html>
+
+
+<style>
+    /* Shared minimal overrides */
+html,body { height: 100%; }
+
+/* Booking selection highlight */
+.time-selected {
+  background-color: #040420 !important;
+  color: white;
+}
+
+/* small helpers used by script */
+.calendar-slot { min-height:48px; border-bottom:1px solid #eee; position:relative; padding-left:6px; }
+.appt-pill { display:block; padding:6px 8px; border-radius:8px; background:#111; color:#fff; cursor:pointer; font-size:13px; margin-bottom:6px; }
+
+/* Week day cell */
+.week-day { min-height:160px; border-left:1px solid #f2f2f2; position:relative; padding:8px; }
+.week-day .day-header { font-weight:700; margin-bottom:6px; }
+.week-day .day-appt { display:block; padding:6px 8px; border-radius:6px; background:#111; color:#fff; font-size:12px; margin-bottom:6px; cursor:pointer; }
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .week-day { min-height:120px; }
+}
+
+
+/* Center day numbers inside calendar cells */
+#calendarSmall button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+#calendarSmall button,
+#calendarSmall div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+body{
+    background-color: #111;
+}
+</style>
