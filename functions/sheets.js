@@ -1,4 +1,4 @@
-exports.handler = async (event, context) => {
+export async function handler(event, context) {
   const GOOGLE_URL = "https://script.google.com/macros/s/AKfycbypSO_TIVome8l-jdIqOHjXLmfaf0Mi_8tQukNzIG9BrC8gH0sd3bcnqm4AaeSmQa7Y9A/exec";
 
   try {
@@ -48,7 +48,10 @@ exports.handler = async (event, context) => {
   catch (err) {
     return {
       statusCode: 500,
+      headers: {
+        "Access-Control-Allow-Origin": "*"
+      },
       body: JSON.stringify({ error: String(err) })
     };
   }
-};
+}
